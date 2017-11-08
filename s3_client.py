@@ -5,6 +5,7 @@ import requests
 import requests_aws4auth as aws4auth
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as minidom
+import mimetypes
 
 credential_file = 'credentials.csv'
 
@@ -34,6 +35,29 @@ def create_bucket(bucket):
 
     if r.ok:
         print ('Created bucket {} OK!'.format(bucket))
+    else:
+        xml_pprint(r.text)
+
+def upload_file(bucket, s3_name, local_path, acl='private'):
+    data = open(local_path, 'rb').read()
+    url = 'http://{}.{}/{}'.format(bucket, endpoint, s3_name)
+    headers = {'x-amz-cl': acl}
+    mimetype = mimetypes.guess_type(local_path)[0]
+    if mimetype:
+        headers['Content-Type'] = mimetype
+
+    r = requests.put(url, data=data, headers=headers, auth=auth)
+    if r.ok:
+        print ('Uploaded {} OK'.format(local_path))
+    else:
+        xml_pprint(r.text)
+
+def download_file(bucket, s3_name, local_path):
+    url = 'http://{}.{}/{}'.format(bucket, endpoint, s3_name)
+    r = requests.get(url, auth=auth)
+    if r.ok:
+        open(local_path, 'wb').write(r.content)
+        print ('Downloaded {} OK'.format(s3_name))
     else:
         xml_pprint(r.text)
 
